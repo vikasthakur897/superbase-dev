@@ -1,9 +1,39 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import { supabaseClient } from './superbase-client'
 
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  created_at: string;
+}
+
+
 function App() {
   const [task, setTask] = useState({ title: '', description: '' })
+
+  const [tasks, setTasks] = useState<Task[]>([])
+
+  const fetchTasks = async () => {
+    const { data, error } = await supabaseClient
+      .from('task') 
+      .select('*').order('created_at', { ascending: true })
+
+    if (error) {
+      console.log('Error fetching tasks:', error.message)
+      return;
+    } else {
+      console.log('Tasks:', data)
+      setTasks(data || [])
+    }
+  }
+
+  useEffect(() => {
+    fetchTasks()
+  },[])
+
+  console.log('Current tasks state:', tasks)
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
@@ -14,6 +44,7 @@ function App() {
 
     if (error) {
       console.log('Error inserting task:', error.message)
+      return;
     } else {
       console.log('Task inserted successfully!')
       setTask({ title: '', description: '' })
@@ -43,6 +74,46 @@ function App() {
           Add Task
         </button>
       </form>
+
+  {/* List of Tasks */}
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {tasks.map((task, key) => (
+          <li
+            key={key}
+            style={{
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              padding: "1rem",
+              marginBottom: "0.5rem",
+            }}
+          >
+            <div>
+              <h3>{task.title}</h3>
+              <p>{task.description}</p>
+              {/* <img src={task.image_url} style={{ height: 70 }} /> */}
+              {/* <div>
+                <textarea
+                  placeholder="Updated description..."
+                  onChange={(e) => setNewDescription(e.target.value)}
+                />
+                <button
+                  style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
+                  onClick={() => updateTask(task.id)}
+                >
+                  Edit
+                </button>
+                <button
+                  style={{ padding: "0.5rem 1rem" }}
+                  onClick={() => deleteTask(task.id)}
+                >
+                  Delete
+                </button>
+              </div> */}
+            </div>
+          </li>
+        ))}
+      </ul>
+
     </div>
   )
 }
