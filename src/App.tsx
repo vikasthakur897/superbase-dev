@@ -51,6 +51,23 @@ function App() {
     }
   }
 
+  const deleteTask = async (id: number) => {
+    
+
+    const { error } = await supabaseClient
+      .from('task') 
+      .delete().eq('id', id)
+
+    if (error) {
+      console.log('Error deleting task:', error.message)
+      return;
+    } else {
+      console.log('Task deleted successfully!')
+      setTask({ title: '', description: '' })
+      window.location.reload();
+    }
+  }
+
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "1rem" }}>
       <h2>Task Manager CRUD</h2>
@@ -91,14 +108,14 @@ function App() {
               <h3>{task.title}</h3>
               <p>{task.description}</p>
               {/* <img src={task.image_url} style={{ height: 70 }} /> */}
-              {/* <div>
+              <div>
                 <textarea
                   placeholder="Updated description..."
-                  onChange={(e) => setNewDescription(e.target.value)}
+                  onChange={() => {}}
                 />
                 <button
                   style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
-                  onClick={() => updateTask(task.id)}
+                  onClick={() => {}}
                 >
                   Edit
                 </button>
@@ -108,7 +125,7 @@ function App() {
                 >
                   Delete
                 </button>
-              </div> */}
+              </div> 
             </div>
           </li>
         ))}
