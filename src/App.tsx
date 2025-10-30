@@ -12,6 +12,7 @@ interface Task {
 
 function App() {
   const [task, setTask] = useState({ title: '', description: '' })
+  const [editDescription, setEditDescription] = useState('')
 
   const [tasks, setTasks] = useState<Task[]>([])
 
@@ -68,6 +69,23 @@ function App() {
     }
   }
 
+  const updateTask = async (id: number) => {
+    
+
+    const { error } = await supabaseClient
+      .from('task') 
+      .update({description: editDescription}).eq('id', id)
+
+    if (error) {
+      console.log('Error Updating task:', error.message)
+      return;
+    } else {
+      console.log('Task Update successfully!')
+      setTask({ title: '', description: '' })
+      window.location.reload();
+    }
+  }
+
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "1rem" }}>
       <h2>Task Manager CRUD</h2>
@@ -110,12 +128,13 @@ function App() {
               {/* <img src={task.image_url} style={{ height: 70 }} /> */}
               <div>
                 <textarea
+                style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: "10px" }}
                   placeholder="Updated description..."
-                  onChange={() => {}}
+                  onChange={(e) => setEditDescription(e.target.value)}
                 />
                 <button
                   style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
-                  onClick={() => {}}
+                  onClick={() => updateTask(task.id)}
                 >
                   Edit
                 </button>
