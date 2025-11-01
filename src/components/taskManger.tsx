@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { supabaseClient } from '../superbase-client'
+import { useEffect, useState, type FormEvent } from "react";
+import { supabaseClient } from "../superbase-client";
 
 interface Task {
   id: number;
@@ -8,148 +8,181 @@ interface Task {
   created_at: string;
 }
 
-const TaskManger = () => {
-    const [task, setTask] = useState({ title: '', description: '' })
-  const [editDescription, setEditDescription] = useState('')
+// ✅ Add this interface for props
+interface TaskManagerProps {
+  logOut: () => void;
+}
 
-  const [tasks, setTasks] = useState<Task[]>([])
+const TaskManager = ({ logOut }: TaskManagerProps) => {
+  const [task, setTask] = useState({ title: "", description: "" });
+  const [editDescription, setEditDescription] = useState("");
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchTasks = async () => {
     const { data, error } = await supabaseClient
-      .from('task') 
-      .select('*').order('created_at', { ascending: true })
+      .from("task")
+      .select("*")
+      .order("created_at", { ascending: true });
 
     if (error) {
-      console.log('Error fetching tasks:', error.message)
+      console.error("Error fetching tasks:", error.message);
       return;
-    } else {
-      console.log('Tasks:', data)
-      setTasks(data || [])
     }
-  }
+    setTasks(data || []);
+  };
 
   useEffect(() => {
-    fetchTasks()
-  },[])
+    fetchTasks();
+  }, []);
 
-  console.log('Current tasks state:', tasks)
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!task.title.trim()) return;
+    setLoading(true);
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault()
-
-    const { error } = await supabaseClient
-      .from('task') 
-      .insert([task]) 
-
+    const { error } = await supabaseClient.from("task").insert([task]);
     if (error) {
-      console.log('Error inserting task:', error.message)
-      return;
+      console.error("Error inserting task:", error.message);
     } else {
-      console.log('Task inserted successfully!')
-      setTask({ title: '', description: '' })
+      setTask({ title: "", description: "" });
+      fetchTasks();
     }
-  }
+    setLoading(false);
+  };
 
   const deleteTask = async (id: number) => {
-    
-
-    const { error } = await supabaseClient
-      .from('task') 
-      .delete().eq('id', id)
-
+    const { error } = await supabaseClient.from("task").delete().eq("id", id);
     if (error) {
-      console.log('Error deleting task:', error.message)
-      return;
+      console.error("Error deleting task:", error.message);
     } else {
-      console.log('Task deleted successfully!')
-      setTask({ title: '', description: '' })
-      window.location.reload();
+      setTasks((prev) => prev.filter((t) => t.id !== id));
     }
-  }
+  };
 
   const updateTask = async (id: number) => {
-    
+    if (!editDescription.trim()) return;
 
     const { error } = await supabaseClient
-      .from('task') 
-      .update({description: editDescription}).eq('id', id)
+      .from("task")
+      .update({ description: editDescription })
+      .eq("id", id);
 
     if (error) {
-      console.log('Error Updating task:', error.message)
-      return;
+      console.error("Error updating task:", error.message);
     } else {
-      console.log('Task Update successfully!')
-      setTask({ title: '', description: '' })
-      window.location.reload();
+      setEditDescription("");
+      fetchTasks();
     }
-  }
+  };
 
   return (
-     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "1rem" }}>
-      <h2>Task Manager CRUD</h2>
+    <div className="min-h-screen bg-gray-100 p-6 rounded-lg">
+      <div className="max-w-3xl mx-auto">
+        {/* ✅ Add a header with Logout button */}
+        <header className="flex items-center justify-between mb-6">
+          <h4 className="text-[30px] font-bold text-gray-800">📝 Task Manager</h4>
+          <div className="flex gap-3">
+            <button
+              onClick={fetchTasks}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={logOut}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: "1rem" }}>
-        <input
-          type="text"
-          placeholder="Task Title"
-          value={task.title}
-          onChange={(e) => setTask((prev) => ({ ...prev, title: e.target.value }))}
-          style={{ width: "100%", marginBottom: "0.5rem", padding: "0.5rem" }}
-        />
-        <textarea
-          placeholder="Task Description"
-          value={task.description}
-          onChange={(e) => setTask((prev) => ({ ...prev, description: e.target.value }))}
-          style={{ width: "100%", marginBottom: "0.5rem", padding: "0.5rem" }}
-        />
-
-        <button type="submit" style={{ padding: "0.5rem 1rem" }}>
-          Add Task
-        </button>
-      </form>
-
-  {/* List of Tasks */}
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {tasks.map((task, key) => (
-          <li
-            key={key}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              padding: "1rem",
-              marginBottom: "0.5rem",
-            }}
+        {/* Add Task Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-6 rounded-xl shadow-md mb-8 space-y-3"
+        >
+          <h2 className="text-lg font-semibold text-gray-700">Add New Task</h2>
+          <input
+            type="text"
+            placeholder="Task Title"
+            value={task.title}
+            onChange={(e) =>
+              setTask((prev) => ({ ...prev, title: e.target.value }))
+            }
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <textarea
+            placeholder="Task Description"
+            value={task.description}
+            onChange={(e) =>
+              setTask((prev) => ({ ...prev, description: e.target.value }))
+            }
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+            rows={3}
+          ></textarea>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition w-full"
           >
-            <div>
-              <h3>{task.title}</h3>
-              <p>{task.description}</p>
-              {/* <img src={task.image_url} style={{ height: 70 }} /> */}
-              <div>
-                <textarea
-                style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: "10px" }}
-                  placeholder="Updated description..."
-                  onChange={(e) => setEditDescription(e.target.value)}
-                />
-                <button
-                  style={{ padding: "0.5rem 1rem", marginRight: "0.5rem" }}
-                  onClick={() => updateTask(task.id)}
-                >
-                  Edit
-                </button>
-                <button
-                  style={{ padding: "0.5rem 1rem" }}
-                  onClick={() => deleteTask(task.id)}
-                >
-                  Delete
-                </button>
-              </div> 
-            </div>
-          </li>
-        ))}
-      </ul>
+            {loading ? "Adding..." : "Add Task"}
+          </button>
+        </form>
 
+        {/* Task List */}
+        <div className="space-y-4">
+          {tasks.length === 0 ? (
+            <p className="text-center text-gray-500">No tasks found 😅</p>
+          ) : (
+            tasks.map((task) => (
+              <div
+                key={task.id}
+                className="bg-white p-5 rounded-xl shadow-sm hover:shadow-lg transition"
+              >
+                <h3 className="text-xl font-semibold text-gray-800">
+                  {task.title}
+                </h3>
+                <p className="text-gray-600 mt-1 mb-4">
+                  {task.description || "No description provided."}
+                </p>
+
+                <div className="space-y-2">
+                  <textarea
+                    placeholder="Edit description..."
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    rows={2}
+                  ></textarea>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => updateTask(task.id)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                    >
+                      Update
+                    </button>
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-400 mt-3">
+                  Created: {new Date(task.created_at).toLocaleString()}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default TaskManger;
+export default TaskManager;
